@@ -4,6 +4,9 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/jessevdk/go-flags"
+	ini "github.com/ochinchina/go-ini"
+	"github.com/ochinchina/supervisord/config"
+	"github.com/ochinchina/supervisord/logger"
 	log "github.com/sirupsen/logrus"
 	"os"
 	"os/signal"
@@ -22,7 +25,8 @@ type Options struct {
 }
 
 func init() {
-	log.SetOutput(os.Stdout)
+	nullLogger := logger.NewNullLogger(logger.NewNullLogEventEmitter())
+	log.SetOutput(nullLogger)
 	if runtime.GOOS == "windows" {
 		log.SetFormatter(&log.TextFormatter{DisableColors: true, FullTimestamp: true})
 	} else {
@@ -132,6 +136,24 @@ func runServer() {
 	}
 }
 
+// Get the supervisord log file
+func getSupervisordLogFile(configFile string) string {
+	configFileDir := filepath.Dir(configFile)
+	env := config.NewStringExpression("here", configFileDir)
+	ini := ini.NewIni()
+	ini.LoadFile(configFile)
+	cwd, err := os.Getwd()
+	if err != nil {
+		cwd = "."
+	}
+	logFile := ini.GetValueWithDefault("supervisord", "logfile", filepath.Join(cwd, "supervisord.log"))
+	logFile, err = env.Eval(logFile)
+	if err == nil {
+		return logFile
+	} else {
+		return filepath.Join(".", "supervisord.log")
+	}
+}
 func main() {
 	ReapZombie()
 
@@ -143,8 +165,10 @@ func main() {
 				fmt.Fprintln(os.Stdout, err)
 				os.Exit(0)
 			case flags.ErrCommandRequired:
+				log.SetOutput(os.Stdout)
 				if options.Daemon {
-					Deamonize(runServer)
+					logFile := getSupervisordLogFile(options.Configuration)
+					Deamonize(logFile, runServer)
 				} else {
 					runServer()
 				}
