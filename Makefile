@@ -13,7 +13,7 @@ export CGO_ENABLED
 .PHONY: supervisord guix-package
 supervisord:
 	-mkdir -p ${PREFIX}/bin
-	CGO_ENABLED=0 go build -mod vendor -o ${PREFIX}/bin/supervisord 
+	CGO_ENABLED=0 go build -trimpath -mod vendor -o ${PREFIX}/bin/supervisord 
 
 guix-package:
 	guix build -L . ochinchina-supervisor
