@@ -61,3 +61,4 @@
 But this tool requires that the big python environment be installed in target system. In some situation, for example in the docker environment, the python is too big for us.
 This project re-implements supervisord in go-lang. Compiled supervisord is very suitable for environments where python is not installed.")
         (license expat)))
+ochinchina-supervisor
